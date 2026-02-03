@@ -17,66 +17,48 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#2E7D32', // Verde Campo
-                        secondary: '#E65100', // Naranja Tierra
-                        surface: '#F5F5F7', // Blanco Roto
+                        primary: '#2E7D32', 
+                        secondary: '#E65100', 
+                        surface: '#F5F5F7', 
                         dark: '#1A1A1A'
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
                         serif: ['Montserrat', 'serif'],
                     },
-                    spacing: {
-                        '128': '32rem', // Unidad relativa extra grande
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out forwards',
+                        'slide-up': 'slideUp 0.4s ease-out forwards',
+                    },
+                    keyframes: {
+                        fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
+                        slideUp: { from: { transform: 'translateY(20px)', opacity: 0 }, to: { transform: 'translateY(0)', opacity: 1 } }
                     }
                 }
             }
         }
     </script>
 
-    <!-- Leaflet CSS & JS (Mapas) -->
+    <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- Google Fonts & Icons -->
+    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* BASE STYLES - RELATIVE UNITS ONLY */
-        :root {
-            --header-height: 4rem;
-        }
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #F5F5F7; 
-            height: 100vh;
-            overflow: hidden; /* Evita scroll en body, lo manejamos internamente */
-        }
-        h1, h2, h3, h4, h5, h6 { font-family: 'Montserrat', serif; }
+        :root { --header-height: 4rem; }
+        body { font-family: 'Inter', sans-serif; background-color: #F5F5F7; height: 100vh; overflow: hidden; }
+        h1, h2, h3, h4 { font-family: 'Montserrat', serif; }
         
-        /* Ajustes de scrollbar usando unidades relativas */
-        ::-webkit-scrollbar { width: 0.5rem; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #2E7D32; border-radius: 0.25rem; }
+        ::-webkit-scrollbar { width: 0.4rem; height: 0.4rem; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2E7D32; border-radius: 0.2rem; }
         
-        /* Leaflet Overrides con Unidades Relativas */
-        .leaflet-popup-content-wrapper { 
-            border-radius: 0.75rem; 
-            padding: 0; 
-            overflow: hidden; 
-        }
-        .leaflet-popup-content { 
-            margin: 0; 
-            width: 16rem !important; /* ~256px relativo a base font size */
-        }
-        /* Mobile adjustment for popup width */
-        @media (max-width: 640px) {
-            .leaflet-popup-content { width: 14rem !important; }
-        }
-        
-        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .leaflet-popup-content-wrapper { border-radius: 0.75rem; padding: 0; overflow: hidden; }
+        .leaflet-popup-content { margin: 0; width: 16rem !important; }
+        .grid-responsive { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1.5rem; }
     </style>
 </head>
 <body>
@@ -85,319 +67,291 @@
 
 <script type="text/babel">
 
-    // --- DATOS SIMULADOS (MOCK DATA) ---
-    // Reflejan la variedad mencionada en el Plan de Empresa (Alimentación, Artesanía, Bebida)
+    // --- MOCK DATA ---
     const PRODUCTS = [
-        {
-            id: 1,
-            name: "Miel de Romero Ecológica",
-            category: "Alimentación",
-            price: "12€ / kg",
-            producer: "Apiarios La Alcarria",
-            location: "Brihuega, Guadalajara",
-            coords: [40.7594, -2.8714],
-            image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-            avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-            story: "Llevamos 4 generaciones cuidando abejas en los campos de lavanda. Nuestra miel no se calienta ni pasteuriza, manteniendo todas sus propiedades. Ven a visitarnos y apoya el comercio rural.",
-            tags: ["Eco", "Artesanal", "Sin Gluten"],
-            badge: "Sostenible"
-        },
-        {
-            id: 2,
-            name: "Queso Manchego Curado",
-            category: "Alimentación",
-            price: "24€ / kg",
-            producer: "Quesería El Pastor",
-            location: "Tembleque, Toledo",
-            coords: [39.6974, -3.5029],
-            image: "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-            avatar: "https://randomuser.me/api/portraits/women/44.jpg",
-            story: "Queso elaborado con leche cruda de oveja manchega. Maduración mínima de 12 meses en cueva natural. Compra directa sin intermediarios industriales.",
-            tags: ["D.O.P", "Premiado", "Intenso"],
-            badge: "Tradición"
-        },
-        {
-            id: 3,
-            name: "Cerámica Negra Tradicional",
-            category: "Artesanía",
-            price: "35€ / pieza",
-            producer: "Alfarería Juanito",
-            location: "Verdicio, Asturias",
-            coords: [43.626, -5.882],
-            image: "https://images.unsplash.com/photo-1610701596007-11502861dcfa?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-            avatar: "https://randomuser.me/api/portraits/men/85.jpg",
-            story: "Recuperamos la técnica ancestral de la cerámica negra. Piezas únicas decorativas y funcionales. Ayuda a mantener vivo el oficio.",
-            tags: ["Hecho a mano", "Decoración", "Histórico"],
-            badge: "Patrimonio"
-        },
-        {
-            id: 4,
-            name: "Vino Tinto Crianza",
-            category: "Bebida",
-            price: "15€ / botella",
-            producer: "Bodegas Familiares",
-            location: "Haro, La Rioja",
-            coords: [42.5769, -2.8519],
-            image: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-            avatar: "https://randomuser.me/api/portraits/women/68.jpg",
-            story: "Pequeña bodega familiar que apuesta por variedades autóctonas casi extintas. Visita nuestros viñedos centenarios.",
-            tags: ["Enoturismo", "Sostenible"],
-            badge: "Eco"
-        },
-        {
-            id: 5,
-            name: "Aceite de Oliva Virgen Extra",
-            category: "Alimentación",
-            price: "45€ / 5L",
-            producer: "Cooperativa Oro Líquido",
-            location: "Úbeda, Jaén",
-            coords: [38.0118, -3.3713],
-            image: "https://images.unsplash.com/photo-1474979266404-7cadd259d3cf?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-            avatar: "https://randomuser.me/api/portraits/men/12.jpg",
-            story: "Aceite de recolección temprana. Picual 100%. Sabor intenso con notas de tomate y hierba fresca.",
-            tags: ["AOVE", "Gourmet"],
-            badge: "Local"
-        }
+        { id: 1, name: "Miel de Romero Ecológica", category: "Alimentación", price: "12€ / kg", producer: "Apiarios La Alcarria", location: "Brihuega, Guadalajara", coords: [40.7594, -2.8714], image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=800", avatar: "https://randomuser.me/api/portraits/men/32.jpg", story: "Miel cruda sin pasteurizar. 4 generaciones de apicultores.", tags: ["Eco", "Artesanal"] },
+        { id: 2, name: "Queso Manchego Curado", category: "Alimentación", price: "24€ / kg", producer: "Quesería El Pastor", location: "Tembleque, Toledo", coords: [39.6974, -3.5029], image: "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=800", avatar: "https://randomuser.me/api/portraits/women/44.jpg", story: "Leche cruda de oveja manchega. Curación en cueva.", tags: ["D.O.P", "Premiado"] },
+        { id: 3, name: "Cerámica Negra", category: "Artesanía", price: "35€ / pieza", producer: "Alfarería Juanito", location: "Verdicio, Asturias", coords: [43.626, -5.882], image: "https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&w=800", avatar: "https://randomuser.me/api/portraits/men/85.jpg", story: "Técnica ancestral de horno de leña reductor.", tags: ["Patrimonio", "Decoración"] },
+        { id: 4, name: "Vino Tinto Crianza", category: "Bebida", price: "15€ / botella", producer: "Bodegas Familiares", location: "Haro, La Rioja", coords: [42.5769, -2.8519], image: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800", avatar: "https://randomuser.me/api/portraits/women/68.jpg", story: "Viñedos centenarios y variedades autóctonas.", tags: ["Enoturismo"] },
+        { id: 5, name: "Aceite AOVE Picual", category: "Alimentación", price: "45€ / 5L", producer: "Coop. Oro Líquido", location: "Úbeda, Jaén", coords: [38.0118, -3.3713], image: "https://images.unsplash.com/photo-1474979266404-7cadd259d3cf?auto=format&fit=crop&w=800", avatar: "https://randomuser.me/api/portraits/men/12.jpg", story: "Recolección temprana, extracción en frío.", tags: ["AOVE", "Gourmet"] }
     ];
 
-    // --- COMPONENTES UI (ATOMIC DESIGN) ---
+    const ROUTES = [
+        { id: 1, title: "Ruta de la Miel", location: "La Alcarria", duration: "1 Día", stops: 4, image: "https://images.unsplash.com/photo-1473973266708-19e99968b541?auto=format&fit=crop&w=800", desc: "Descubre los campos de lavanda y las colmenas tradicionales." },
+        { id: 2, title: "Ruta del Quijote Gastronómico", location: "Castilla-La Mancha", duration: "Weekend", stops: 6, image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800", desc: "Queso, vino y azafrán en escenarios de novela." },
+        { id: 3, title: "Sabores del Norte", location: "Asturias y Cantabria", duration: "3 Días", stops: 8, image: "https://images.unsplash.com/photo-1533280385001-c32ff4cb7633?auto=format&fit=crop&w=800", desc: "Sidra, queso azul y alfarería negra entre montañas." }
+    ];
 
-    // Componente Badge usando solo Tailwind relativo
-    const Badge = ({ children, type = 'default' }) => {
-        const colors = {
-            default: 'bg-green-50 text-green-700 border-green-100',
-            warning: 'bg-orange-50 text-secondary border-orange-100'
-        };
+    const BADGES = [
+        { id: 1, name: "Primeros Pasos", icon: "fa-person-hiking", unlocked: true, desc: "Has visitado tu primer pueblo." },
+        { id: 2, name: "Gourmet Rural", icon: "fa-utensils", unlocked: true, desc: "Has comprado 3 productos de alimentación." },
+        { id: 3, name: "Mecenas", icon: "fa-hand-holding-heart", unlocked: false, desc: "Apoya a 5 artesanos diferentes." },
+        { id: 4, name: "Explorador", icon: "fa-map-location-dot", unlocked: false, desc: "Completa una Ruta oficial." }
+    ];
+
+    // --- COMPONENTES UI ---
+
+    const Header = ({ activeTab, onTabChange }) => {
+        const tabs = [
+            { id: 'map', label: 'Mapa', icon: 'fa-map' },
+            { id: 'producers', label: 'Productores', icon: 'fa-shop' },
+            { id: 'routes', label: 'Rutas', icon: 'fa-route' },
+            { id: 'passport', label: 'Pasaporte', icon: 'fa-passport' }
+        ];
+
         return (
-            <span className={`${colors[type]} text-[0.65rem] px-2 py-1 rounded-full border font-medium uppercase tracking-wide`}>
-                {children}
-            </span>
-        );
-    };
-
-    const Header = () => (
-        <nav className="bg-white shadow-sm sticky top-0 z-50 h-16 shrink-0">
-            <div className="max-w-7xl mx-auto px-4 h-full">
-                <div className="flex justify-between h-full items-center">
-                    <div className="flex items-center gap-2 cursor-pointer">
+            <nav className="bg-white shadow-sm sticky top-0 z-50 h-16 shrink-0">
+                <div className="max-w-7xl mx-auto px-4 h-full flex justify-between items-center">
+                    <div className="flex items-center gap-2 cursor-pointer" onClick={() => onTabChange('map')}>
                         <div className="bg-primary text-white p-1.5 rounded-lg shadow-sm">
                             <i className="fa-solid fa-location-dot text-lg"></i>
                         </div>
-                        <div>
-                            <span className="font-serif font-bold text-xl md:text-2xl text-primary tracking-tight">RuralNow</span>
+                        <span className="font-serif font-bold text-xl md:text-2xl text-primary tracking-tight">RuralNow</span>
+                    </div>
+
+                    <div className="hidden md:flex space-x-1 bg-gray-100 p-1 rounded-xl">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => onTabChange(tab.id)}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                                    activeTab === tab.id 
+                                    ? 'bg-white text-primary shadow-sm font-bold' 
+                                    : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                <i className={`fa-solid ${tab.icon}`}></i> {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <button className="md:hidden text-gray-600"><i className="fa-solid fa-bars text-xl"></i></button>
+
+                    <button className="hidden sm:block bg-secondary text-white px-4 py-2 rounded-full text-xs font-bold hover:bg-orange-700 transition shadow-md">
+                        Soy Productor
+                    </button>
+                </div>
+                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-3 z-50 pb-safe">
+                    {tabs.map(tab => (
+                        <button 
+                            key={tab.id}
+                            onClick={() => onTabChange(tab.id)}
+                            className={`flex flex-col items-center gap-1 text-[0.65rem] ${activeTab === tab.id ? 'text-primary' : 'text-gray-400'}`}
+                        >
+                            <i className={`fa-solid ${tab.icon} text-lg ${activeTab === tab.id ? 'animate-bounce' : ''}`}></i>
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+            </nav>
+        );
+    };
+
+    // --- VISTAS ---
+
+    // 1. VISTA MAPA (Core) - FIXED: Use useRef for instance and proper cleanup
+    const MapView = ({ products, onSelect }) => {
+        const mapContainerRef = React.useRef(null);
+        const mapInstanceRef = React.useRef(null);
+        const markersRef = React.useRef([]);
+        const [searchTerm, setSearchTerm] = React.useState("");
+
+        const filtered = products.filter(p => 
+            p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            p.category.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        // 1. Inicialización del Mapa (Solo una vez)
+        React.useEffect(() => {
+            if (!mapInstanceRef.current && mapContainerRef.current) {
+                const map = L.map(mapContainerRef.current, { zoomControl: false }).setView([40.4168, -3.7038], 5);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+                L.control.zoom({ position: 'bottomright' }).addTo(map);
+                mapInstanceRef.current = map;
+            }
+
+            // Cleanup al desmontar el componente (Cambio de Pestaña)
+            return () => {
+                if (mapInstanceRef.current) {
+                    mapInstanceRef.current.remove();
+                    mapInstanceRef.current = null;
+                }
+            };
+        }, []);
+
+        // 2. Gestión de Marcadores (Cada vez que cambia el filtro)
+        React.useEffect(() => {
+            if (!mapInstanceRef.current) return;
+
+            // Limpiar anteriores
+            markersRef.current.forEach(m => m.remove());
+            markersRef.current = [];
+
+            // Añadir nuevos
+            filtered.forEach(p => {
+                const icon = L.divIcon({
+                    html: `<div style="background:#2E7D32;width:2rem;height:2rem;border-radius:50%;border:2px solid white;display:flex;justify-content:center;align-items:center;color:white;box-shadow:0 2px 4px rgba(0,0,0,0.3)"><i class="fa-solid fa-basket-shopping"></i></div>`,
+                    className: '', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32]
+                });
+                const marker = L.marker(p.coords, { icon }).addTo(mapInstanceRef.current);
+                marker.bindPopup(`<div onclick="window.dispatchEvent(new CustomEvent('open-modal',{detail:${p.id}}))" style="cursor:pointer">
+                    <img src="${p.image}" style="width:100%;height:8rem;object-fit:cover;border-radius:0.5rem 0.5rem 0 0" />
+                    <div style="padding:0.75rem"><h3 style="font-weight:bold;margin-bottom:0.2rem">${p.name}</h3><p style="font-size:0.8rem;color:#666">${p.location}</p><button style="width:100%;background:#2E7D32;color:white;border:none;padding:0.4rem;border-radius:0.4rem;margin-top:0.5rem;font-size:0.75rem;cursor:pointer">Ver</button></div>
+                </div>`);
+                markersRef.current.push(marker);
+            });
+        }, [filtered]); // Se ejecuta cuando cambia 'filtered'
+
+        return (
+            <div className="flex flex-col md:flex-row h-full relative">
+                {/* Mobile Search Overlay */}
+                <div className="absolute top-4 left-4 right-4 z-20 md:w-[24rem] pointer-events-none">
+                     <div className="bg-white p-2 rounded-xl shadow-lg pointer-events-auto flex gap-2">
+                        <i className="fa-solid fa-search text-gray-400 p-3"></i>
+                        <input 
+                            type="text" 
+                            placeholder="Buscar productos..." 
+                            className="w-full outline-none text-sm"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                     </div>
+                </div>
+
+                {/* Map Container usando REF */}
+                <div ref={mapContainerRef} className="w-full h-full z-0 bg-gray-100"></div>
+            </div>
+        );
+    };
+
+    // 2. VISTA PRODUCTORES
+    const ProducersView = ({ products, onSelect }) => (
+        <div className="p-4 md:p-8 max-w-7xl mx-auto h-full overflow-y-auto pb-24 animate-fade-in">
+            <div className="mb-8 text-center">
+                <h2 className="text-3xl font-serif font-bold text-primary mb-2">Nuestros Artesanos</h2>
+                <p className="text-gray-500 max-w-2xl mx-auto">Conoce a las personas detrás del producto. Apoya la economía local comprando directamente a quien lo produce.</p>
+            </div>
+            
+            <div className="grid-responsive">
+                {products.map(p => (
+                    <div key={p.id} onClick={() => onSelect(p)} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition cursor-pointer border border-gray-100 group">
+                        <div className="h-32 bg-gray-200 relative">
+                            <img src={p.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <div className="absolute -bottom-6 left-4 w-12 h-12 rounded-full border-2 border-white overflow-hidden shadow-md z-10">
+                                <img src={p.avatar} className="w-full h-full object-cover" />
+                            </div>
+                        </div>
+                        <div className="pt-8 p-4">
+                            <h3 className="font-bold text-lg text-gray-900">{p.producer}</h3>
+                            <p className="text-xs text-gray-500 mb-3"><i className="fa-solid fa-location-dot"></i> {p.location}</p>
+                            <div className="flex gap-2 mb-4">
+                                {p.tags.map(t => <span key={t} className="bg-green-50 text-green-700 text-[0.6rem] px-2 py-0.5 rounded-full border border-green-100">{t}</span>)}
+                            </div>
+                            <button className="w-full border border-primary text-primary py-2 rounded-lg text-sm font-medium hover:bg-primary hover:text-white transition">Ver Perfil</button>
                         </div>
                     </div>
-                    {/* Navegación Desktop */}
-                    <div className="hidden md:flex space-x-6">
-                        <a href="#" className="text-primary font-semibold px-2 py-1 border-b-2 border-primary text-sm">Mapa</a>
-                        <a href="#" className="text-gray-500 hover:text-primary px-2 py-1 text-sm font-medium transition-colors">Productores</a>
-                        <a href="#" className="text-gray-500 hover:text-primary px-2 py-1 text-sm font-medium transition-colors">Rutas</a>
-                        <a href="#" className="text-gray-500 hover:text-primary px-2 py-1 text-sm font-medium transition-colors" title="Plan de Empresa: Sistema de insignias">
-                            <i className="fa-solid fa-passport mr-1"></i>Pasaporte
-                        </a>
-                    </div>
-                    {/* Botones de Acción */}
-                    <div className="flex items-center gap-3">
-                        <button className="hidden sm:block text-gray-500 hover:text-primary"><i className="fa-solid fa-globe text-lg"></i></button>
-                        <button className="bg-secondary text-white px-4 py-2 rounded-full text-xs md:text-sm font-medium shadow-md hover:bg-orange-700 transition transform hover:scale-105">
-                            Soy Productor
-                        </button>
-                    </div>
-                </div>
+                ))}
             </div>
-        </nav>
+        </div>
     );
 
-    const ProductCard = ({ product, onClick }) => (
-        <div 
-            onClick={() => onClick(product)}
-            className="bg-white rounded-xl shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-300 cursor-pointer border border-gray-100 overflow-hidden flex flex-col h-full group relative"
-        >
-            <div className="absolute top-3 left-3 z-10">
-                <Badge type="warning">{product.category}</Badge>
+    // 3. VISTA RUTAS
+    const RoutesView = () => (
+        <div className="p-4 md:p-8 max-w-7xl mx-auto h-full overflow-y-auto pb-24 animate-fade-in">
+             <div className="flex justify-between items-end mb-6">
+                <div>
+                    <h2 className="text-3xl font-serif font-bold text-secondary mb-1">Rutas RuralNow</h2>
+                    <p className="text-gray-500 text-sm">Turismo vivencial y gastronómico.</p>
+                </div>
+                <button className="text-primary text-sm font-bold hover:underline">Ver todas</button>
             </div>
-            
-            <div className="relative h-40 md:h-48 overflow-hidden bg-gray-100">
-                <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold text-primary shadow-sm border border-gray-100">
-                    {product.price}
+
+            <div className="space-y-6">
+                {ROUTES.map((route, i) => (
+                    <div key={route.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col md:flex-row hover:shadow-md transition animate-slide-up" style={{animationDelay: `${i*100}ms`}}>
+                        <div className="md:w-1/3 h-48 md:h-auto relative">
+                            <img src={route.image} className="w-full h-full object-cover" />
+                            <div className="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                                <i className="fa-regular fa-clock"></i> {route.duration}
+                            </div>
+                        </div>
+                        <div className="p-6 md:w-2/3 flex flex-col justify-center">
+                            <div className="flex justify-between items-start mb-2">
+                                <span className="text-secondary text-xs font-bold uppercase tracking-wider">{route.location}</span>
+                                <span className="text-gray-400 text-xs"><i className="fa-solid fa-flag"></i> {route.stops} Paradas</span>
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">{route.title}</h3>
+                            <p className="text-gray-600 text-sm mb-4 leading-relaxed">{route.desc}</p>
+                            <div className="flex gap-3 mt-auto">
+                                <button className="bg-primary text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-green-800 transition">Comenzar Ruta</button>
+                                <button className="text-gray-500 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Descargar PDF</button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+
+    // 4. VISTA PASAPORTE
+    const PassportView = () => (
+        <div className="p-4 md:p-8 max-w-4xl mx-auto h-full overflow-y-auto pb-24 animate-fade-in">
+            <div className="bg-gradient-to-r from-primary to-green-800 rounded-2xl p-6 text-white mb-8 shadow-lg relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-10 text-9xl"><i className="fa-solid fa-passport"></i></div>
+                <div className="flex items-center gap-6 relative z-10">
+                    <div className="w-20 h-20 bg-white rounded-full p-1 shadow-lg">
+                        <img src="https://randomuser.me/api/portraits/lego/1.jpg" className="w-full h-full rounded-full object-cover" />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-bold">Viajero Rural</h2>
+                        <p className="text-green-100 text-sm mb-2">Nivel 3 • Guardián del Patrimonio</p>
+                        <div className="w-48 h-2 bg-black/20 rounded-full overflow-hidden">
+                            <div className="h-full bg-secondary w-[70%]"></div>
+                        </div>
+                        <p className="text-[0.65rem] mt-1 opacity-80">750/1000 XP para Nivel 4</p>
+                    </div>
                 </div>
             </div>
-            
-            <div className="p-4 flex flex-col flex-grow">
-                <div className="flex items-center text-gray-400 text-xs mb-1">
-                    <i className="fa-solid fa-location-dot mr-1 text-secondary"></i> 
-                    <span className="truncate">{product.location}</span>
-                </div>
-                <h3 className="font-serif font-bold text-base md:text-lg text-gray-900 mb-1 leading-tight">{product.name}</h3>
-                <p className="text-xs md:text-sm text-gray-500 mb-3 font-medium">{product.producer}</p>
-                
-                <div className="mt-auto flex gap-1 flex-wrap">
-                    {product.tags.slice(0, 3).map(tag => (
-                        <span key={tag} className="bg-gray-50 text-gray-600 text-[0.65rem] px-2 py-1 rounded-md border border-gray-100">
-                            #{tag}
-                        </span>
-                    ))}
+
+            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><i className="fa-solid fa-medal text-yellow-500"></i> Tus Insignias</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {BADGES.map(badge => (
+                    <div key={badge.id} className={`p-4 rounded-xl border text-center transition ${badge.unlocked ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-60 grayscale'}`}>
+                        <div className={`w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center text-xl shadow-sm ${badge.unlocked ? 'bg-orange-100 text-secondary' : 'bg-gray-200 text-gray-400'}`}>
+                            <i className={`fa-solid ${badge.icon}`}></i>
+                        </div>
+                        <h4 className="font-bold text-sm text-gray-800">{badge.name}</h4>
+                        <p className="text-[0.65rem] text-gray-500 mt-1 leading-tight">{badge.desc}</p>
+                        {badge.unlocked && <span className="block mt-2 text-[0.6rem] text-green-600 font-bold">CONSEGUIDO</span>}
+                    </div>
+                ))}
+            </div>
+
+            <div className="mt-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h3 className="font-bold text-gray-900 mb-4">Tu Impacto Local</h3>
+                <div className="grid grid-cols-3 gap-4 text-center divide-x divide-gray-100">
+                    <div>
+                        <div className="text-2xl font-bold text-primary">3</div>
+                        <div className="text-[0.65rem] text-gray-500 uppercase">Pueblos Visitados</div>
+                    </div>
+                    <div>
+                        <div className="text-2xl font-bold text-secondary">45€</div>
+                        <div className="text-[0.65rem] text-gray-500 uppercase">Invertido en Local</div>
+                    </div>
+                    <div>
+                        <div className="text-2xl font-bold text-blue-500">12kg</div>
+                        <div className="text-[0.65rem] text-gray-500 uppercase">CO2 Ahorrado</div>
+                    </div>
                 </div>
             </div>
         </div>
     );
 
-    const Modal = ({ product, onClose }) => {
-        if (!product) return null;
-
-        return (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-                {/* Usamos max-w relativo y alturas relativas (vh) */}
-                <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl relative flex flex-col md:flex-row">
-                    <button 
-                        onClick={onClose}
-                        className="absolute top-4 right-4 bg-white/80 p-2 rounded-full hover:bg-white transition z-20 shadow-sm"
-                    >
-                        <i className="fa-solid fa-times text-gray-800 text-lg"></i>
-                    </button>
-
-                    {/* Image Side - Responsive width */}
-                    <div className="w-full md:w-5/12 h-48 md:h-auto relative bg-gray-200">
-                        <img src={product.image} className="w-full h-full object-cover" alt={product.name} />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent md:bg-gradient-to-r"></div>
-                        <div className="absolute bottom-4 left-4 text-white">
-                             <div className="flex items-center gap-1 text-sm font-medium mb-1">
-                                <i className="fa-solid fa-map-pin text-secondary"></i> {product.location}
-                             </div>
-                             <div className="text-xs opacity-90">España Vaciada • Patrimonio</div>
-                        </div>
-                    </div>
-
-                    {/* Content Side - Responsive padding */}
-                    <div className="w-full md:w-7/12 p-6 md:p-8 flex flex-col overflow-y-auto">
-                        
-                        {/* Header del Productor */}
-                        <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
-                            <img src={product.avatar} alt="Productor" className="w-12 h-12 md:w-14 md:h-14 rounded-full border-2 border-primary object-cover" />
-                            <div>
-                                <p className="text-xs text-gray-500 uppercase tracking-wider font-bold">Productor Local</p>
-                                <h4 className="font-bold text-gray-900 text-lg">{product.producer}</h4>
-                            </div>
-                            <div className="ml-auto bg-green-50 text-green-700 text-xs px-3 py-1 rounded-full flex items-center gap-1 border border-green-100">
-                                <i className="fa-solid fa-check-circle"></i> Oficial
-                            </div>
-                        </div>
-
-                        <div className="mb-6">
-                            <h2 className="font-serif text-2xl md:text-3xl font-bold text-gray-900 mb-2 leading-tight">{product.name}</h2>
-                            <p className="text-secondary font-medium text-lg">{product.price}</p>
-                        </div>
-
-                        <div className="bg-gray-50 p-4 rounded-xl border-l-4 border-secondary mb-6 italic text-gray-600 text-sm leading-relaxed">
-                            "{product.story}"
-                        </div>
-
-                        {/* Botones de Acción (Core Idea: Contacto directo) */}
-                        <div className="mt-auto grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <button className="bg-primary text-white py-3 px-4 rounded-xl font-medium hover:bg-green-800 transition shadow-lg shadow-green-700/20 flex justify-center items-center gap-2 group">
-                                <i className="fa-solid fa-location-arrow group-hover:animate-bounce"></i> 
-                                <span>Ir al Origen</span>
-                            </button>
-                            <button className="border border-gray-200 text-gray-700 py-3 px-4 rounded-xl font-medium hover:bg-gray-50 transition flex justify-center items-center gap-2">
-                                <i className="fa-brands fa-whatsapp text-green-600 text-lg"></i>
-                                <span>Contactar</span>
-                            </button>
-                        </div>
-                        
-                        <p className="text-center text-[0.7rem] text-gray-400 mt-4">
-                            Al visitar este productor apoyas la economía circular y reduces la huella de carbono.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
+    // Main App Component
     const App = () => {
-        const [searchTerm, setSearchTerm] = React.useState("");
-        const [filteredProducts, setFilteredProducts] = React.useState(PRODUCTS);
+        const [activeTab, setActiveTab] = React.useState('map');
         const [selectedProduct, setSelectedProduct] = React.useState(null);
-        const [view, setView] = React.useState("split"); 
-        const mapRef = React.useRef(null);
-        const markersRef = React.useRef([]);
 
-        // Lógica de Filtrado (Búsqueda Inversa: Producto -> Ubicación)
-        React.useEffect(() => {
-            const results = PRODUCTS.filter(product => 
-                product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-            );
-            setFilteredProducts(results);
-        }, [searchTerm]);
-
-        // Inicialización del Mapa
-        React.useEffect(() => {
-            if (!mapRef.current) {
-                // Leaflet Map Initialization
-                mapRef.current = L.map('map', {
-                    zoomControl: false // Movemos el control de zoom si quisiéramos personalizarlo
-                }).setView([40.4168, -3.7038], 6); 
-
-                L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
-
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                    attribution: '&copy; OpenStreetMap &copy; CARTO',
-                    subdomains: 'abcd',
-                    maxZoom: 19
-                }).addTo(mapRef.current);
-            }
-
-            // Gestión de Marcadores
-            markersRef.current.forEach(marker => marker.remove());
-            markersRef.current = [];
-
-            filteredProducts.forEach(product => {
-                // Icono personalizado usando FontAwesome dentro de un DivIcon de Leaflet
-                const iconHtml = `<div style="background-color: #2E7D32; width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"><i class="fa-solid fa-basket-shopping" style="font-size: 0.9rem"></i></div>`;
-                
-                const customIcon = L.divIcon({
-                    html: iconHtml,
-                    className: 'custom-div-icon',
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 32],
-                    popupAnchor: [0, -32]
-                });
-
-                const marker = L.marker(product.coords, { icon: customIcon }).addTo(mapRef.current);
-                
-                // Contenido del Popup (Mantenemos HTML simple pero estilizado)
-                const popupContent = `
-                    <div style="cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('open-modal', {detail: ${product.id}}))">
-                        <img src="${product.image}" style="width: 100%; height: 8rem; object-fit: cover; display: block;" />
-                        <div style="padding: 1rem;">
-                            <h3 style="font-weight: 700; font-family: Montserrat; margin-bottom: 0.25rem; font-size: 0.9rem; color: #1A1A1A;">${product.name}</h3>
-                            <p style="font-size: 0.75rem; color: #666; margin: 0; display: flex; align-items: center; gap: 0.25rem;">
-                                <i class="fa-solid fa-location-dot" style="color: #E65100;"></i> ${product.location}
-                            </p>
-                            <button style="margin-top: 0.75rem; width: 100%; background: #2E7D32; color: white; border: none; padding: 0.5rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer;">Ver Historia</button>
-                        </div>
-                    </div>
-                `;
-                
-                marker.bindPopup(popupContent);
-                markersRef.current.push(marker);
-            });
-
-            // Auto-centrado del mapa si hay resultados
-            if (filteredProducts.length > 0 && markersRef.current.length > 0) {
-                 const group = new L.featureGroup(markersRef.current);
-                 mapRef.current.fitBounds(group.getBounds().pad(0.1));
-            } else if (filteredProducts.length === 0) {
-                // Si no hay resultados, vista por defecto
-                mapRef.current.setView([40.4168, -3.7038], 5);
-            }
-
-        }, [filteredProducts]);
-
-        // Bridge para eventos desde el Popup de Leaflet (Vanilla JS) hacia React
         React.useEffect(() => {
             const handleOpenModal = (e) => {
                 const product = PRODUCTS.find(p => p.id === e.detail);
@@ -407,98 +361,37 @@
             return () => window.removeEventListener('open-modal', handleOpenModal);
         }, []);
 
+        const renderContent = () => {
+            switch(activeTab) {
+                case 'map': return <MapView products={PRODUCTS} onSelect={setSelectedProduct} />;
+                case 'producers': return <ProducersView products={PRODUCTS} onSelect={setSelectedProduct} />;
+                case 'routes': return <RoutesView />;
+                case 'passport': return <PassportView />;
+                default: return <MapView />;
+            }
+        };
 
         return (
             <div className="flex flex-col h-screen overflow-hidden">
-                <Header />
-
-                {/* Main Layout: Sidebar + Map */}
-                <div className="flex flex-1 overflow-hidden relative">
-                    
-                    {/* Sidebar / Lista: Responsive width (rem/%) */}
-                    <div className={`w-full md:w-[26rem] lg:w-[30rem] bg-surface flex flex-col border-r border-gray-200 z-10 transition-transform duration-300 absolute md:relative h-full ${view === 'map' ? '-translate-x-full md:translate-x-0' : 'translate-x-0'}`}>
-                        
-                        {/* Search & Filters */}
-                        <div className="p-4 bg-white shadow-sm z-20">
-                            <h1 className="font-serif text-xl md:text-2xl font-bold text-gray-900 mb-1">Encuentra el origen</h1>
-                            <p className="text-xs text-gray-500 mb-3">Busca productos, no lugares. Apoya lo local.</p>
-                            
-                            <div className="relative group">
-                                <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors"></i>
-                                <input 
-                                    type="text" 
-                                    placeholder="Ej. Miel de Romero, Queso..." 
-                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white transition text-sm"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
-                            
-                            {/* Filtros rápidos (Tags) */}
-                            <div className="flex gap-2 mt-3 overflow-x-auto pb-1 no-scrollbar mask-gradient-right">
-                                <button onClick={() => setSearchTerm('')} className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border transition ${searchTerm === '' ? 'bg-primary text-white border-primary' : 'bg-white text-gray-600 border-gray-200 hover:border-primary'}`}>Todo</button>
-                                <button onClick={() => setSearchTerm('Alimentación')} className="whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-white text-gray-600 border border-gray-200 hover:border-primary hover:text-primary transition">Alimentación</button>
-                                <button onClick={() => setSearchTerm('Artesanía')} className="whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-white text-gray-600 border border-gray-200 hover:border-primary hover:text-primary transition">Artesanía</button>
-                            </div>
-                        </div>
-
-                        {/* Listado de Resultados */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 md:pb-4 bg-gray-50/50">
-                            <div className="flex justify-between items-center px-1">
-                                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{filteredProducts.length} Productores cerca</p>
-                                <span className="text-[0.65rem] text-primary bg-primary/10 px-2 py-0.5 rounded">Radio Nacional</span>
-                            </div>
-                            
-                            {filteredProducts.map(product => (
-                                <ProductCard key={product.id} product={product} onClick={setSelectedProduct} />
-                            ))}
-
-                            {/* Estado Vacio */}
-                            {filteredProducts.length === 0 && (
-                                <div className="text-center py-12 px-4">
-                                    <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <i className="fa-solid fa-tree text-gray-400 text-2xl"></i>
-                                    </div>
-                                    <h3 className="text-gray-900 font-medium">No encontramos ese producto</h3>
-                                    <p className="text-gray-500 text-xs mt-1 max-w-[200px] mx-auto">Intenta buscar por categoría o explora el mapa manualmente.</p>
-                                </div>
-                            )}
-
-                             {/* Promo Card: Captación de Productores (Plan de Negocio) */}
-                             <div className="bg-gradient-to-br from-primary to-green-900 rounded-xl p-5 text-white mt-6 shadow-lg relative overflow-hidden group cursor-pointer">
-                                <div className="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-white/10 rounded-full blur-xl group-hover:bg-white/20 transition"></div>
-                                <h3 className="font-serif font-bold text-lg mb-1 relative z-10">¿Eres Artesano?</h3>
-                                <p className="text-xs text-green-100 mb-3 relative z-10 opacity-90">Digitaliza tu negocio sin costes técnicos. Llega al turista urbano.</p>
-                                <button className="w-full bg-white text-primary py-2.5 rounded-lg text-xs font-bold hover:bg-green-50 transition shadow-sm">
-                                    Unirse a RuralNow
-                                </button>
-                             </div>
-                             
-                             <div className="text-center mt-4">
-                                <p className="text-[0.65rem] text-gray-400">RuralNow © 2026 • Proyecto Paperless</p>
-                             </div>
-                        </div>
-                    </div>
-
-                    {/* Mapa (Leaflet Container) */}
-                    <div className="flex-1 relative h-full bg-gray-200">
-                        <div id="map" className="h-full w-full outline-none z-0"></div>
-                        
-                        {/* Botón Flotante Mobile (Toggle Vista) */}
-                        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 md:hidden z-[1000]">
-                            <button 
-                                onClick={() => setView(view === 'list' ? 'map' : 'list')}
-                                className="bg-dark text-white px-6 py-3 rounded-full shadow-xl shadow-black/20 font-medium flex items-center gap-2 text-sm border border-gray-700 hover:scale-105 transition-transform"
-                            >
-                                {view === 'list' ? <><i className="fa-solid fa-map"></i> Ver Mapa</> : <><i className="fa-solid fa-list"></i> Ver Lista</>}
-                            </button>
-                        </div>
-                    </div>
-
+                <Header activeTab={activeTab} onTabChange={setActiveTab} />
+                <div className="flex-1 overflow-hidden relative bg-surface">
+                    {renderContent()}
                 </div>
 
-                {/* Modal Global */}
-                <Modal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+                {selectedProduct && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+                        <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden relative">
+                            <button onClick={() => setSelectedProduct(null)} className="absolute top-3 right-3 bg-white/80 p-1 rounded-full z-10 hover:bg-white transition"><i className="fa-solid fa-times"></i></button>
+                            <img src={selectedProduct.image} className="w-full h-48 object-cover" />
+                            <div className="p-6">
+                                <h2 className="text-2xl font-bold font-serif text-gray-900">{selectedProduct.name}</h2>
+                                <p className="text-secondary font-bold mb-2">{selectedProduct.price}</p>
+                                <p className="text-sm text-gray-600 mb-4">{selectedProduct.story}</p>
+                                <button className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-green-800 transition">Ir al Origen</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     };
@@ -507,6 +400,5 @@
     root.render(<App />);
 
 </script>
-
 </body>
 </html>
